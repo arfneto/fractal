@@ -20,10 +20,27 @@ namespace fractal
 		Bitmap
 		(
 			int width,
-			int heigth
+			int height
 		);
 
 		virtual ~Bitmap();
+
+		void fillBitmap
+		(
+			uint8_t red, 
+			uint8_t green, 
+			uint8_t blue
+		);
+
+		int get_height();
+
+		int get_width();
+
+		void scaleToFractal
+		(
+			int x, int y, 
+			double & xFractal, double & yFractal
+		);
 
 		void setPixel(
 			int x,
@@ -32,6 +49,8 @@ namespace fractal
 			uint8_t green,
 			uint8_t blue
 			);
+
+		void testScaling(int nPerLine);
 
 		bool write(string filename);
 
