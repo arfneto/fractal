@@ -1,7 +1,5 @@
 #include "stdafx.h"
 #include "ZoomList.h"
-#include <iostream>
-#include <vector>
 
 namespace fractal
 {
@@ -22,23 +20,21 @@ namespace fractal
 		m_xCenter += (zoom.x - m_width / 2) * m_scale;
 		m_yCenter += (zoom.y - m_height / 2) * m_scale;
 		m_scale *= zoom.scale;
-
-		//std::cout <<
-		//	m_xCenter <<
-		//	", " <<
-		//	m_yCenter <<
-		//	", " <<
-		//	m_scale <<
-		//	std::endl;
-
 		return;
 	}
-	std::pair<double, double> ZoomList::doZoom(int x, int y)
+
+	
+
+	std::pair<double, double> ZoomList::doZoom
+	(
+		int x,
+		int y
+	)
 	{
 		double xFractal = (x - m_width / 2)*m_scale + m_xCenter;
 		double yFractal = (y - m_height / 2)*m_scale + m_yCenter;
 
-		return std::pair<double, double>(xFractal, 0);
+		return std::pair<double, double>(xFractal, yFractal);
 	}
 	;
 }
