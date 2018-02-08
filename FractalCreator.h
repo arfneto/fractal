@@ -33,14 +33,15 @@ namespace fractal
 		FractalCreator
 		(
 			int width, 
-			int height
+			int height,
+			int iterations
 		);
 
 		~FractalCreator();
 
 		void addZoom(const Zoom & zoom);
 
-		void calculateIteration();
+		int calculateNextIteration();
 
 		void clearData();
 
@@ -50,7 +51,7 @@ namespace fractal
 			int green, 
 			int blue);
 
-		void drawFractal();
+		int drawFractal();
 
 		void dumpHistogram
 		(

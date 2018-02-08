@@ -7,9 +7,13 @@ using namespace std;
 
 namespace fractal
 {
-	fractal::FractalCreator::FractalCreator(int width, int height) :
+	fractal::FractalCreator::FractalCreator(
+		int width, 
+		int height, 
+		int iterations) :
 		m_width(width),
 		m_height(height),
+		m_iterations(iterations),
 		m_histogram(new int[Mandelbrot::MAX_ITERATIONS - 1]{}),
 		m_itCountFor(new int[width * height]{}),
 		m_bitmap(width, height),
@@ -17,9 +21,7 @@ namespace fractal
 	{
 	// constructor	
 		// center is (0,0) scale is 1.0
-		m_zoomList.add(Zoom(width / 2, height / 2, 4.0 / width));
 		m_notMaxed = 0;
-		m_iterations = 100;
 		strcpy_s( m_prefix, "yymmdd-hhmmss-nn-Mandelbrot.bmp");
 	}
 
@@ -41,11 +43,12 @@ namespace fractal
 
 
 
-	void FractalCreator::calculateIteration()
+	int FractalCreator::calculateNextIteration()
 	{
 		//
 		//	1st loop: prepare histogram and iteration's count
 		//
+		if(!m_zoomList.getNext()) return 0;	// get next coordinates
 		int Maxed = 0;
 		for (int y = 0; y<m_height; y++)
 		{
@@ -63,6 +66,7 @@ namespace fractal
 		};
 
 		m_notMaxed = m_height * m_width - Maxed;
+		return 1;
 	}
 
 
@@ -96,7 +100,7 @@ namespace fractal
 
 
 
-	void FractalCreator::drawFractal()
+	int FractalCreator::drawFractal()
 	{
 		char filename[40];
 		//
@@ -141,6 +145,8 @@ namespace fractal
 		// yymmdd-hhmmss-nn-Mandelbrot.bmp
 		// 0123456789012345678901234567890
 		dumpHistogram(filename);
+		if (m_notMaxed == 0) return 0;
+		return 1;
 	}	//	end 
 
 

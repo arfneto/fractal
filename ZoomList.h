@@ -1,6 +1,6 @@
 #pragma once
-#include <iostream>
-#include	<vector>
+#include	<iostream>
+#include	<queue>
 #include	<utility>
 #include	"Zoom.h"
 
@@ -17,7 +17,7 @@ namespace fractal
 		double m_yCenter{ 0 };
 		double m_scale{ 1.0 };
 
-		std::vector<Zoom> zooms;
+		std::queue<Zoom> zooms;
 
 	public:
 
@@ -30,5 +30,9 @@ namespace fractal
 		void add(const Zoom & zoom);
 
 		std::pair<double, double> doZoom(int x, int y);
+
+		int getNext();
+
+		std::queue<Zoom> getZooms();
 	};
 }

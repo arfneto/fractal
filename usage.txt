@@ -1,0 +1,14 @@
+Usage:
+
+fractal width height iterations [ (x y scale) (x y scale) ... ]
+	
+where (x, y, scale) are sets of center points and scale for additional zoom bitmaps
+
+Ex: "fractal 800 600 1000 321 377 0.1 150 150 0.1"
+
+	- will generate 3 sets of bitmap/histogram files
+	- The first set
+	- A second set with zoom at (321,377) with scale 0.1
+ 	- A third set with zoom at (150,150) with scale 0.1
+ 	- bitmaps will be named yymmdd-hhmmss-01-Mandelbrot, yymmdd-hhmmss-02-Mandelbrot, and so on
+ 	- histogram files will have the same names, but extension txt
