@@ -8,9 +8,13 @@ namespace fractal
 		int y{ 0 };
 		double scale{ 1.0 };
 
-		Zoom(int x,
+		Zoom
+		(
+			int x,
 			int y,
-			double scale)
-			: x(x), y(y), scale(scale) {};
+			double scale
+		)
+			: x(x), y(y), scale(scale)
+		{};
 	};
 }

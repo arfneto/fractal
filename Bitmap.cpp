@@ -74,10 +74,6 @@ namespace fractal
 		double &xFractal,
 		double &yFractal)
 	{
-		// xFractal = 2x/W - 1
-		//xFractal = (double)(x + x) / (double) m_width - 1.;
-		// yFractal = 2y/H - 1
-		//yFractal = (double)(y + y) / (double) m_height - 1.;
 		xFractal = (x - m_width / 2 - 200) * 2.0 / m_height;
 		yFractal = (y - m_height / 2) * 2.0 / m_height;
 	}
@@ -155,12 +151,6 @@ namespace fractal
 		{
 			return false;
 		}
-		cout <<
-			"Bitmap file " <<
-			filename <<
-			" is open" <<
-			endl;
-
 		file.write((char *)&fileHeader, sizeof(fileHeader));
 		file.write((char *)&infoHeader, sizeof(infoHeader));
 		file.write((char *)m_pPixels.get(), m_width*m_height*3);
@@ -170,12 +160,6 @@ namespace fractal
 		{
 			return false;
 		}
-		cout <<
-			"Bitmap file " <<
-			filename <<
-			" is closed" <<
-			endl;
-
 		return true;
 	}
 };	//	end namespace

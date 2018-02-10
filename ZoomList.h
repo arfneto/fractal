@@ -13,13 +13,12 @@ namespace fractal
 		int m_width{ 0 };
 		int m_height{ 0 };
 
+	public:
+
 		double m_xCenter{ 0 };
 		double m_yCenter{ 0 };
 		double m_scale{ 1.0 };
-
 		std::queue<Zoom> zooms;
-
-	public:
 
 		ZoomList
 		(
@@ -28,8 +27,6 @@ namespace fractal
 		);
 
 		void add(const Zoom & zoom);
-
-		std::pair<double, double> doZoom(int x, int y);
 
 		int getNext();
 

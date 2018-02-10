@@ -45,26 +45,27 @@ namespace fractal
 
 	int FractalCreator::calculateNextIteration()
 	{
+		double	xFractal;
+		double	yFractal;
+		int		it;
+		int		Maxed = 0;
 		//
-		//	1st loop: prepare histogram and iteration's count
+		//		- prepare histogram
+		//		- compute iterations 
 		//
 		if(!m_zoomList.getNext()) return 0;	// get next coordinates
-		int Maxed = 0;
 		for (int y = 0; y<m_height; y++)
 		{
 			for (int x = 0; x < m_width; x++)
 			{
-				pair<double, double> coords = m_zoomList.doZoom(x, y);
-				int iterations = Mandelbrot::getIterations(
-					coords.first,
-					coords.second,
-					m_iterations);
-				m_itCountFor[y*m_width + x] = iterations;
-				if (iterations >= m_iterations) Maxed += 1;	// this one did not converged
-				m_histogram[iterations] += 1;
+				xFractal = (x - m_width  / 2)* m_zoomList.m_scale + m_zoomList.m_xCenter;
+				yFractal = (y - m_height / 2)* m_zoomList.m_scale + m_zoomList.m_yCenter;
+				it = Mandelbrot::getIterations(xFractal, yFractal,	m_iterations);
+				m_itCountFor[y*m_width + x] = it;
+				if (it >= m_iterations) Maxed += 1;	// this one did not converge
+				m_histogram[it] += 1;
 			}
 		};
-
 		m_notMaxed = m_height * m_width - Maxed;
 		return 1;
 	}
@@ -76,7 +77,6 @@ namespace fractal
 	void FractalCreator::clearData()
 	{
 		for (int i = 0; i <= m_iterations; i++)	m_histogram[i] = 0;
-		for (int i = 0; i < (m_width * m_height); i++)			m_itCountFor[i] = 0;
 		return;
 	}
 
@@ -159,9 +159,9 @@ namespace fractal
 		ofstream	f;
 		long	sum = 0;
 
-		cout << "dumping histogram for " <<
+		cout << "dumpHistogram():\n\t\tdumping histogram for " <<
 			m_iterations << " of " <<
-			Mandelbrot::MAX_ITERATIONS << " MAX iterations at " <<
+			Mandelbrot::MAX_ITERATIONS << " MAX iterations\n\t\tat " <<
 			filename <<
 			endl;
 
@@ -171,10 +171,19 @@ namespace fractal
 			cout << "could not create " << filename << endl;
 			return;
 		}
-		f << "dumping histogram for a run of " <<
+		f << "Histogram for a run of " <<
 			m_iterations << "/" <<
-			Mandelbrot::MAX_ITERATIONS << " MAX iterations at " <<
-			filename << "\n";
+			Mandelbrot::MAX_ITERATIONS << " MAX iterations" << endl;
+		
+		f << "    filename is " << filename << "\n";
+		f << "    Size is " << m_width << "*" << m_height << endl;
+		f << "    Center is (" <<
+			m_zoomList.m_xCenter <<
+			", " <<
+			m_zoomList.m_yCenter <<
+			") scale is " <<
+			m_zoomList.m_scale <<
+			endl;
 
 		// now the data: 
 		for (int i = 0; i <= m_iterations; i++)
