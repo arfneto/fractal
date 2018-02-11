@@ -103,49 +103,66 @@ namespace fractal
 	int FractalCreator::drawFractal()
 	{
 		char filename[40];
+
+		uint8_t red;
+		uint8_t green;
+		uint8_t blue;
+
+		RGB		startColor(0, 0, 20);
+		RGB		endColor(255, 128, 74);
+		RGB		colorDiff = endColor - startColor;
+
 		//
 		//	it is possible that not a single point converged
 		//	so there is nothing to draw. After a deep zoom
-		//	data points tends to max out
+		//	data points tends to max out. in this case we
+		//  just set a black display and return. Just for 
+		//  make it clear, generate a histogram file with
+		//  the data, all zeroes..
 		//
-		if (m_notMaxed != 0)
-		{
-			for (int y = 0; y < m_height; y++)
-			{
-				for (int x = 0; x < m_width; x++)
-				{
-					uint8_t red = 0;
-					uint8_t green = 0;
-					uint8_t blue = 0;
 
-					int iterations = m_itCountFor[y*m_width + x];
-					if (iterations != m_iterations)
+		if (m_notMaxed == 0)
+		{
+			m_bitmap.fillBitmap(0, 0, 0);
+			strcpy_s(filename, m_prefix);
+			strcat_s(filename, ".txt");
+			dumpHistogram(filename);
+			return 0;
+		}
+		//	normal flow... there is some data
+		for (int y = 0; y < m_height; y++)
+		{
+			for (int x = 0; x < m_width; x++)
+			{
+				int iterations = m_itCountFor[y*m_width + x];
+				if (iterations != m_iterations)
+				{
+					double hue = 0;
+					for (int i = 0; i <= iterations; i++)
 					{
-						double hue = 0;
-						for (int i = 0; i <= iterations; i++)
-						{
-							hue += (double)(m_histogram[i]) / m_notMaxed;
-						}
-						green = (uint8_t)(255 * hue);
+						hue += (double)(m_histogram[i]) / m_notMaxed;
 					}
-					m_bitmap.setPixel(x, y, red, green, blue);
+					red =	(uint8_t)(startColor.r + colorDiff.r * hue);
+					green = (uint8_t)(startColor.g + colorDiff.g * hue);
+					blue =	(uint8_t)(startColor.b + colorDiff.b * hue);
 				}
+				else
+				{
+					red = 0;
+					green = 0;
+					blue = 0;
+				}
+				m_bitmap.setPixel(x, y, red, green, blue);
 			}
 		}
-		else
-		{
-			// sets a black image. no need to calculate
-			m_bitmap.fillBitmap(0, 0, 0);
-		};
 		//
 		// now dump the histogram to file
 		//
-		strcpy_s(filename, m_prefix);
-		memcpy_s(filename+27, 4, ".txt", 4);
 		// yymmdd-hhmmss-nn-Mandelbrot.bmp
 		// 0123456789012345678901234567890
+		strcpy_s(filename, m_prefix);
+		strcat_s(filename, ".txt");
 		dumpHistogram(filename);
-		if (m_notMaxed == 0) return 0;
 		return 1;
 	}	//	end 
 
@@ -154,16 +171,16 @@ namespace fractal
 
 
 
-	void FractalCreator::dumpHistogram(string filename)
+	void FractalCreator::dumpHistogram(string const filename)
 	{
 		ofstream	f;
 		long	sum = 0;
 
-		cout << "dumpHistogram():\n\t\tdumping histogram for " <<
-			m_iterations << " of " <<
-			Mandelbrot::MAX_ITERATIONS << " MAX iterations\n\t\tat " <<
-			filename <<
-			endl;
+		//cout << "dumpHistogram():\n\t\tdumping histogram for " <<
+		//	m_iterations << " of " <<
+		//	Mandelbrot::MAX_ITERATIONS << " MAX iterations\n\t\tat " <<
+		//	filename <<
+		//	endl;
 
 		f.open(filename, ios::out);
 		if (!f)
@@ -201,19 +218,66 @@ namespace fractal
 
 
 
+	int FractalCreator::getFileNamePrefix
+	(
+		char * prefix,
+		const int gen
+	)
+	{
+		char timebuf[30];
+		struct tm newtime;
+		__time64_t long_time;
+		errno_t err;
+		_time64(&long_time);
+		err = _localtime64_s(&newtime, &long_time);
+		strcpy_s(timebuf, "yymmdd-hhmmss-nn-Mandelbrot");
+		if (!err)
+		{	// Convert to a valid prefix an in yymmdd-hhmmss-NN-
+			sprintf_s(
+				timebuf, 32, "%02d%02d%02d-%02d%02d%02d-%02d-Mandelbrot",
+				(newtime.tm_year - 100), (newtime.tm_mon + 1), newtime.tm_mday, 
+				newtime.tm_hour, newtime.tm_min,	newtime.tm_sec,	gen
+			);
+		}
+		memcpy_s(prefix, 32, timebuf, 32);
+		return 0;
+	}
+
+
+
+
+
 	string FractalCreator::getPrefix()
 	{
 		return m_prefix;
 	}
-	
-	
-	
-	
-	
-	void FractalCreator::setFileNamePrefix(char * p)
+
+		
+		
+		
+		
+	int FractalCreator::run()
 	{
-		strcpy_s(m_prefix, p);
-		return;
+		int generation = 0;
+		cout << "Generating fractals. This can take a while. Please wait" << endl;
+		do
+		{
+			getFileNamePrefix(m_prefix, ++generation);
+			if (!calculateNextIteration()) break;
+			if (drawFractal())
+			{
+				writeBitmap();
+				clearData();
+			}
+			else
+			{
+				writeBitmap();
+				break;
+			};
+			cout << getPrefix() << " generated. Looking for more zoom points. Please wait" << endl;
+		} while (true);
+		cout << "No more points. Ended" << endl;
+		return 0;
 	}
 
 
@@ -276,6 +340,7 @@ namespace fractal
 	void FractalCreator::writeBitmap()
 	{
 		string f = m_prefix;
+		f.append(".bmp");
 		m_bitmap.write(f);
 	}
 }

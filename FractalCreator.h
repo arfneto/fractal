@@ -10,6 +10,7 @@
 #include "time.h"
 #include "Mandelbrot.h"
 #include "Zoomlist.h"
+#include "RGB.h"
 
 
 using namespace std;
@@ -28,6 +29,27 @@ namespace fractal
 		int						m_notMaxed;
 		int						m_iterations;
 		char					m_prefix[40];
+
+	int calculateNextIteration();
+	
+	void clearData();
+	
+	int drawFractal();
+
+	void dumpHistogram
+	(
+		string const filename
+	);
+
+	int getFileNamePrefix
+	(
+		char * prefix,
+		const int gen
+	);
+
+	void writeBitmap();
+
+
 	public:
 
 		FractalCreator
@@ -41,29 +63,16 @@ namespace fractal
 
 		void addZoom(const Zoom & zoom);
 
-		int calculateNextIteration();
-
-		void clearData();
-
 		void createSolidBitmap(
 			string filename,  
 			int red, 
 			int green, 
 			int blue);
 
-		int drawFractal();
-
-		void dumpHistogram
-		(
-			string filename
-		);
-
 		string getPrefix();
 
-		void setFileNamePrefix(char * p);
+		int run();
 
 		void testCoordinates();
-
-		void writeBitmap();
 	};
 }
