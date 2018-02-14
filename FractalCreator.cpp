@@ -14,7 +14,7 @@ namespace fractal
 		m_width(width),
 		m_height(height),
 		m_iterations(iterations),
-		m_histogram(new int[Mandelbrot::MAX_ITERATIONS - 1]{}),
+		m_histogram(new int[Mandelbrot::MAX_ITERATIONS + 1]{}),
 		m_itCountFor(new int[width * height]{}),
 		m_bitmap(width, height),
 		m_zoomList(width, height)
@@ -48,7 +48,6 @@ namespace fractal
 		double	xFractal;
 		double	yFractal;
 		int		it;
-		int		Maxed = 0;
 		//
 		//		- prepare histogram
 		//		- compute iterations 
@@ -61,12 +60,11 @@ namespace fractal
 				xFractal = (x - m_width  / 2)* m_zoomList.m_scale + m_zoomList.m_xCenter;
 				yFractal = (y - m_height / 2)* m_zoomList.m_scale + m_zoomList.m_yCenter;
 				it = Mandelbrot::getIterations(xFractal, yFractal,	m_iterations);
-				m_itCountFor[y*m_width + x] = it;
-				if (it >= m_iterations) Maxed += 1;	// this one did not converge
-				m_histogram[it] += 1;
+				m_itCountFor[y*m_width + x] = it;		// maxed out points return 0
+				m_histogram[it] += 1;	// in column zero we have the MAXed out items
 			}
 		};
-		m_notMaxed = m_height * m_width - Maxed;
+		m_notMaxed = m_height * m_width - m_histogram[0];
 		return 1;
 	}
 
@@ -77,7 +75,6 @@ namespace fractal
 	void FractalCreator::clearData()
 	{
 		for (int i = 0; i <= m_iterations; i++)	m_histogram[i] = 0;
-		return;
 	}
 
 
@@ -138,7 +135,7 @@ namespace fractal
 				if (iterations != m_iterations)
 				{
 					double hue = 0;
-					for (int i = 0; i <= iterations; i++)
+					for (int i = 1; i <= iterations; i++)
 					{
 						hue += (double)(m_histogram[i]) / m_notMaxed;
 					}

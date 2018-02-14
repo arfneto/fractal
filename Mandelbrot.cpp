@@ -5,18 +5,11 @@ using namespace std;
 namespace fractal
 {
 
-	Mandelbrot::Mandelbrot()
-	{
-	}
-
-
-	Mandelbrot::~Mandelbrot()
-	{
-	}
+	Mandelbrot::Mandelbrot(){}
+	Mandelbrot::~Mandelbrot(){}
 
 	int Mandelbrot::getIterations(
-		double x,
-		double y,
+		double x, double y,
 		int it
 	)
 	{
@@ -24,17 +17,13 @@ namespace fractal
 		complex<double> c(x,y);
 
 		if (it > MAX_ITERATIONS) it = MAX_ITERATIONS;
-
 		int iterations = 0;
-		while (iterations < it)
+		do
 		{
-			z = z * z + c;
-			if (abs(z) > 2)
-			{
-				break;
-			}
 			iterations += 1;
-		}
-		return iterations;
+			z = z * z + c;
+			if (abs(z) > 2) return iterations; 
+		} while (iterations <= it);
+		return 0;	// MAXED OUT
 	}
 }

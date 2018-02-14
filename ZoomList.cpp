@@ -39,16 +39,11 @@ namespace fractal
 		m_xCenter += (zoom.x - m_width / 2) * m_scale;
 		m_yCenter += (zoom.y - m_height / 2) * m_scale;
 		m_scale *= zoom.scale;
-		//{
-		//	std::cout <<
-		//	"getNext():\n\tnew coordinates being computed for " <<
-		//	"center: (" <<
-		//	zoom.x << ", " <<
-		//	zoom.y << ") scale " <<
-		//	zoom.scale <<
-		//	"\n\tnew center is (" << m_xCenter << ", " << m_yCenter << ") new scale " << m_scale <<
-		//	std::endl;
-		//}
+		std::cout << "\tZoom at (" <<
+			zoom.x << ", " <<
+			zoom.y << "), scale set to " <<
+			zoom.scale << ". Calculating..." <<
+			std::endl;
 		zooms.pop();	// done with this one
 		return 1;
 	}
