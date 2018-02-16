@@ -12,6 +12,8 @@ namespace fractal
 			double g,
 			double b
 		);
+
+		RGB();
 	};
 
 	RGB operator -	(

@@ -2,10 +2,11 @@
 #include <cstdint>
 using namespace std;
 
-#pragma pack(2)
-
 namespace fractal
 {
+
+#pragma pack(2)
+
 	struct BitmapFileHeader
 	{
 		char header[2]{ 'B', 'M' };

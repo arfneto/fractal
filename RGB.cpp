@@ -11,6 +11,11 @@ namespace fractal
 	) : r(r), g(g), b(b)
 	{ };
 
+	RGB::RGB()
+	{
+		r = g = b = 0;
+	}
+
 	RGB operator -
 		(
 			const RGB & first,

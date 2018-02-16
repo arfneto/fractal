@@ -23,7 +23,7 @@ namespace fractal
 			iterations += 1;
 			z = z * z + c;
 			if (abs(z) > 2) return iterations; 
-		} while (iterations <= it);
+		} while (iterations < it);
 		return 0;	// MAXED OUT
 	}
 }

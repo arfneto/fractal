@@ -1,8 +1,8 @@
 #include "stdafx.h"
 #include "Bitmap.h"
-#include "BitmapFileHeader.h"
-#include <string>
 #include <fstream>
+
+#pragma pack(2)
 
 using namespace std;
 
@@ -163,3 +163,4 @@ namespace fractal
 		return true;
 	}
 };	//	end namespace
+#pragma pack(pop)
