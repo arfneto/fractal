@@ -23,7 +23,7 @@ namespace fractal
 		// center is (0,0) scale is 1.0
 		m_notMaxed = 0;
 		strcpy_s( m_prefix, "yymmdd-hhmmss-nn-Mandelbrot.bmp");
-		rangesInUse = 0;
+		m_rangesInUse = 0;
 
 	}
 
@@ -50,7 +50,6 @@ namespace fractal
 		double	xFractal;
 		double	yFractal;
 		int		it;
-		char filename[40];
 		//
 		//		- prepare histogram
 		//		- compute iterations 
@@ -68,10 +67,7 @@ namespace fractal
 			}
 		};
 		m_notMaxed = m_height * m_width - (int) m_histogram[0][0];
-		// now fill in the histogam and write it down
-		strcpy_s(filename, m_prefix);
-		strcat_s(filename, ".txt");
-		dumpHistogram(filename);
+		prepareHistogram();
 		return 1;
 	}
 
@@ -156,18 +152,12 @@ namespace fractal
 
 
 
-
 	void FractalCreator::dumpHistogram(string const filename)
 	{
 		ofstream	f;
 		double	sum;
-		double average;
-		double deviation;
-		int i;
-		int j;
-		int t;
-		int le, ri, ple, pri;
 		char line[80];
+		int i;
 
 		f.open(filename, ios::out);
 		if (!f)
@@ -179,9 +169,9 @@ namespace fractal
 			m_iterations << "/" <<
 			Mandelbrot::MAX_ITERATIONS << " MAX iterations" << endl;
 		
-		f << "    filename is " << filename << "\n";
-		f << "    Size is " << m_width << "*" << m_height << endl;
-		f << "    Center is (" <<
+		f << "\tfilename is " << filename << "\n";
+		f << "\tSize is " << m_width << "*" << m_height << endl;
+		f << "\tCenter is (" <<
 			m_zoomList.m_xCenter <<
 			", " <<
 			m_zoomList.m_yCenter <<
@@ -189,63 +179,26 @@ namespace fractal
 			m_zoomList.m_scale <<
 			endl;
 		//
-		// now get the values into the histogram
+		// write ranges data
 		//
-		// average:
 		sum = 0;
-		for (i = 1; i <= m_iterations; i++)
+		for (i = 0; i < m_rangesInUse; i++)
 		{
-				sum += m_histogram[i][0];
+			f << 
+				"\tRange " << i << " total is " << m_rangeTotal[i][0] << 
+				" from " << m_rangeTotal[i][1] << 
+				" to " << m_rangeTotal[i][2] << endl;
+			sum += m_rangeTotal[i][0];
 		}
-		average = sum / m_iterations;
-		//// now the standard deviation: 
-		for (i = 1; i <= m_iterations; i++)
-		{
-			m_histogramAvg[i] = m_histogram[i][0] - average;
-			m_histogramAvg[i] *= m_histogramAvg[i]; // square it
-		};
-		// standard deviation:
-		deviation = 0;
-		for (i = 1; i <= m_iterations; i++)
-		{
-			deviation += m_histogramAvg[i];
-		}
-		deviation /= (double)m_iterations;
-		deviation = sqrt(deviation);
-		// now put the ratio of the (iterations - average)/deviation on column 1
-		for (i = 1; i <= m_iterations; i++)
-		{
-			m_histogramAvg[i] = (m_histogram[i][0] - average) / deviation;
-		}
-		// now set column 1 with h[i] = i
-		for (i = m_iterations; i >=0; i--)
-		{
-			m_histogram[i][1] = i;
-		};
-		// now sort pointers on column 1 based on values at column 0
-		for (i = m_iterations; i>1; i--)
-		{
-			for (j = 1; j<i; j++)
-			{
-				ple = m_histogram[j][1];
-				pri = m_histogram[j+1][1];
-				le = m_histogram[ple][0];
-				ri = m_histogram[pri][0];
-				if (le > ri)
-				{
-					t = m_histogram[j][1];
-					m_histogram[j][1] = m_histogram[j + 1][1];
-					m_histogram[j + 1][1] = t;
-				}
-			};
-		};
-		// now points column 2 to ordered range using the pointers at column 1
-		for (i = 1; i <= m_iterations; i++)
-		{
-			m_histogram[i][2] = m_histogram[m_histogram[i][1]][0];
-		};
+		f << "\tGrand Total is: " << 
+			sum << " + " <<
+			m_histogram[0][0] << " = " << sum + m_histogram[0][0] << endl;
 		//
-		// now dump the data: 
+		sprintf_s(line, 70, "\n\tAverage is %+8.2f\n", m_average); f << line;
+		//
+		sprintf_s(line, 70, "\tStandard Deviation is %+8.2f\n\n",m_deviation); f << line;
+		//
+		// now dump the histogram data: 
 		sum = 0;
 		for (i = 0; i <= m_iterations; i++)
 		{
@@ -263,8 +216,6 @@ namespace fractal
 		}
 		sprintf_s(line, 70, "\n\ttotal of %8.0f values\n", sum);
 		f << line;
-		sprintf_s(line, 70, "\tAverage is %8.2f\n", average); f << line;
-		sprintf_s(line, 70, "\tStandard Deviation is %+8.2f\n", deviation); f << line;
 		f.close();
 		return;
 
@@ -283,26 +234,42 @@ namespace fractal
 		RGB		colorDiff(0, 0, 0);
 
 		int rank;
+		int thisPoint = m_histogram[it][0];
 		double d = it - 1;
-		rank = (int)(d / m_iterations * rangesInUse);
+		double mult;
+		rank = (int)(d / m_iterations * m_rangesInUse);
 		//cout << "iteration:" << it << " of " << m_iterations << " rank is " << rank << endl;
-		double mult = (double)m_histogram[it][0] / rangeTotal[rank];
+		//
+		//  logic:  in this rank we have from rangeTotal[rank][1] to rangeTotal[rank][2] values
+		//			present value is at m_histogram[it][0]
+		//			we will project this present value between the range limits
+		//			note that the range can have only one point and then all three are the same...
+		//
+		if (m_rangeTotal[rank][1] == m_rangeTotal[rank][2])
+		{
+			// single one in this range
+			// put it in the middle of teh range color
+			mult = 0.5;
+		}
+		else
+		{
+			mult = (double)thisPoint / (m_rangeTotal[rank][2] - m_rangeTotal[rank][1]);	// 0..1
+		}
 		if (rank == 0)
 		{
 			//cout << "starting color for this rank is (" << c.r << "," << c.g << "," << c.b << ")" << endl;
-			colorDiff = colorRange[0];
+			colorDiff = m_colorRange[0];
 			red =	(uint8_t) (colorDiff.r * mult);
 			green = (uint8_t) (colorDiff.g * mult);
 			blue =  (uint8_t) (colorDiff.b * mult);
 		}
 		else
 		{
-			c = colorRange[rank - 1];
 			//cout << "starting color for this rank is (" << c.r << "," << c.g << "," << c.b << ")" << endl;
-			colorDiff = colorRange[rank] - colorRange[rank - 1];
-			red =	(uint8_t) (colorRange[rank - 1].r + colorDiff.r * mult);
-			green = (uint8_t) (colorRange[rank - 1].g + colorDiff.g * mult);
-			blue =	(uint8_t) (colorRange[rank - 1].b + colorDiff.b * mult);
+			colorDiff = m_colorRange[rank] - m_colorRange[rank - 1];
+			red =	(uint8_t) (m_colorRange[rank - 1].r + colorDiff.r * mult);
+			green = (uint8_t) (m_colorRange[rank - 1].g + colorDiff.g * mult);
+			blue =	(uint8_t) (m_colorRange[rank - 1].b + colorDiff.b * mult);
 		}
 		//cout << "color for pixel is (" << (int)red << "," << (int)green << "," << (int)blue << ")" << endl;
 		return;
@@ -345,16 +312,88 @@ namespace fractal
 		
 		
 		
-		
+	void FractalCreator::prepareHistogram()
+	{
+		// average
+		double sum = 0;
+		int ple, le, pri, ri;
+		int i;
+		int j;
+		int t;
+
+		for (i = 1; i <= m_iterations; i++)
+		{
+			sum += m_histogram[i][0];
+		}
+		m_average = sum / m_iterations;
+		//// now the standard deviation: 
+		for (i = 1; i <= m_iterations; i++)
+		{
+			m_histogramAvg[i] = m_histogram[i][0] - m_average;
+			m_histogramAvg[i] *= m_histogramAvg[i]; // square it
+		};
+		// standard deviation:
+		m_deviation = 0;
+		for (i = 1; i <= m_iterations; i++)
+		{
+			m_deviation += m_histogramAvg[i];
+		}
+		m_deviation /= (double)m_iterations;
+		m_deviation = sqrt(m_deviation);
+		// now put the ratio of the (iterations - average)/deviation on column 1
+		for (i = 1; i <= m_iterations; i++)
+		{
+			m_histogramAvg[i] = (m_histogram[i][0] - m_average) / m_deviation;
+		}
+		// now set column 1 with h[i] = i
+		for (i = m_iterations; i >= 0; i--)
+		{
+			m_histogram[i][1] = i;
+		};
+		// now sort pointers on column 1 based on values at column 0
+		for (i = m_iterations; i>1; i--)
+		{
+			for (j = 1; j<i; j++)
+			{
+				ple = m_histogram[j][1];
+				pri = m_histogram[j + 1][1];
+				le = m_histogram[ple][0];
+				ri = m_histogram[pri][0];
+				if (le > ri)
+				{
+					t = m_histogram[j][1];
+					m_histogram[j][1] = m_histogram[j + 1][1];
+					m_histogram[j + 1][1] = t;
+				}
+			};
+		};
+		// now points column 2 to ordered range using the pointers at column 1
+		for (i = 1; i <= m_iterations; i++)
+		{
+			m_histogram[i][2] = m_histogram[m_histogram[i][1]][0];
+		};
+	}	// end prepareHistogram()
+	
+	
+	
+	
+
 	int FractalCreator::run()
 	{
 		int generation = 0;
+		char filename[40];
+
 		cout << "Generating fractals. This can take a while. Please wait" << endl;
 		do
 		{
 			getFileNamePrefix(m_prefix, ++generation);
 			if (!calculateNextIteration()) break;
 			setColorRanges();
+			// now fill in the histogam and write it down
+			strcpy_s(filename, m_prefix);
+			strcat_s(filename, ".txt");
+			dumpHistogram(filename);
+
 			if (drawFractal())
 			{
 				writeBitmap();
@@ -378,51 +417,72 @@ namespace fractal
 	void FractalCreator::setColorRanges()
 	{
 		int rank;
-		rangesInUse = 4;
+		m_rangesInUse = 5;
 
-		//colorRange[0].r = 128;
-		//colorRange[0].g = 128;
-		//colorRange[0].b = 128;	// gray
+		m_colorRange[4].r = 210;
+		m_colorRange[4].g = 55;
+		m_colorRange[4].b = 55;	// gray
 
-		colorRange[0].r = 255;
-		colorRange[0].g = 255;
-		colorRange[0].b = 128;	// yellow
+		m_colorRange[3].r = 64;
+		m_colorRange[3].g = 64;
+		m_colorRange[3].b = 255;	
 
-		colorRange[1].r = 128;
-		colorRange[1].g = 255;
-		colorRange[1].b = 128;	// somewhat green
+		m_colorRange[2].r = 64;
+		m_colorRange[2].g = 255;
+		m_colorRange[2].b = 64;	
 
-		colorRange[2].r = 128;
-		colorRange[2].g = 128;
-		colorRange[2].b = 255;	// somewhat blue
+		m_colorRange[1].r = 255;
+		m_colorRange[1].g = 64;
+		m_colorRange[1].b = 64;	
 
-		colorRange[3].r = 255;
-		colorRange[3].g = 0;
-		colorRange[3].b = 0;	// red
+		m_colorRange[0].r = 128;
+		m_colorRange[0].g = 128;
+		m_colorRange[0].b = 64;	// red
 
 		// now set the running totals for each range
 		// in int rangeTotal[]
+		// in second column the min iterations in this range
+		// in third column the last one in this range
+		// this will be used in coloring the bitmap
 
-		for (int i = 0; i < rangesInUse; i++)
+		for (int i = 0; i < m_rangesInUse; i++)
 		{
-			rangeTotal[i] = 0;
+			m_rangeTotal[i][0] = 0;
+			m_rangeTotal[i][1] = 0;
+			m_rangeTotal[i][2] = 0;
 		};
+		bool firstInRank;
+		int currentRank = -1;	// we need to know rank breaks
 
 		for (int i = 1; i <= m_iterations; i++)
 		{
+			int thisOne = m_histogram[m_histogram[i][1]][0];
+
 			double d = i - 1;
-			rank = (int)(d / m_iterations * rangesInUse);
-			int count = m_histogram[m_histogram[i][1]][0];
-			rangeTotal[rank] += count;
-			//cout <<	i << ": rank is " << rank << " value is " << count << endl;
+			rank = (int)(d / m_iterations * m_rangesInUse);
+			firstInRank = (currentRank != rank);
+			int count = thisOne;
+			if (firstInRank)
+			{
+				m_rangeTotal[rank][1] = count;	// first in range
+				currentRank = rank;
+				firstInRank = false;
+			}
+			m_rangeTotal[rank][2] = count;	// may be the last
+			m_rangeTotal[rank][0] += count;	// add it up
+			//cout <<	i << ": rank " << rank << " value " << thisOne << endl;
 		}
 		int sum = 0;
-		for (int i = 0; i < rangesInUse; i++)
+		for (int i = 0; i < m_rangesInUse; i++)
 		{
-			cout << i << ": range total is " << rangeTotal[i] << endl;
-			sum += rangeTotal[i];
+			cout << 
+				"\tRange " << i << " total is " << m_rangeTotal[i][0] << 
+				" from " << m_rangeTotal[i][1] << 
+				" to " << m_rangeTotal[i][2] << endl;
+			sum += m_rangeTotal[i][0];
 		}
-		cout << "Grand Total is: " << sum << " + " <<
+		cout << "\tGrand Total is: " << 
+			sum << " + " <<
 			m_histogram[0][0] << " = " << sum + m_histogram[0][0] << endl;
 	};
 

@@ -30,9 +30,11 @@ namespace fractal
 		int						m_notMaxed;
 		int						m_iterations;
 		char					m_prefix[40];
-		int						rangesInUse;
-		RGB						colorRange[10];
-		int						rangeTotal[10];
+		int						m_rangesInUse;
+		RGB						m_colorRange[10];		// colors 
+		int						m_rangeTotal[10][3];	// total first last
+		double					m_average;
+		double					m_deviation;
 
 	int calculateNextIteration();
 	
@@ -50,6 +52,8 @@ namespace fractal
 		char * prefix,
 		const int gen
 	);
+	
+	void prepareHistogram();
 
 	void writeBitmap();
 
