@@ -27,6 +27,10 @@ namespace fractal
 
 	}
 
+
+
+
+
 	FractalCreator::~FractalCreator()
 	{
 		// destructor
@@ -130,7 +134,7 @@ namespace fractal
 			{
 				int iterations = m_itCountFor[y*m_width + x];
 				// maxed out?
-				if (iterations != m_iterations)
+				if ((iterations != 0) && (iterations <= m_iterations))
 				{
 					// draw this one. its position in the range of iterations is at
 					// column 1 of the histogram
@@ -237,24 +241,61 @@ namespace fractal
 		int thisPoint = m_histogram[it][0];
 		double d = it - 1;
 		double mult;
-		rank = (int)(d / m_iterations * m_rangesInUse);
-		//cout << "iteration:" << it << " of " << m_iterations << " rank is " << rank << endl;
+		RGB		startColor = RGB(0, 0, 0);
+				//cout << "iteration:" << it << " of " << m_iterations << " rank is " << rank << endl;
 		//
 		//  logic:  in this rank we have from rangeTotal[rank][1] to rangeTotal[rank][2] values
 		//			present value is at m_histogram[it][0]
 		//			we will project this present value between the range limits
 		//			note that the range can have only one point and then all three are the same...
+		//		
+		//		except for the 20 highest points. For these we will go from the end of the range
+		//		to the final color in a linear way
 		//
+		rank = (int)(d / m_iterations * m_rangesInUse);
 		if (m_rangeTotal[rank][1] == m_rangeTotal[rank][2])
 		{
 			// single one in this range
-			// put it in the middle of teh range color
+			// put it in the middle of the color range
 			mult = 0.5;
 		}
 		else
 		{
 			mult = (double)thisPoint / (m_rangeTotal[rank][2] - m_rangeTotal[rank][1]);	// 0..1
 		}
+		// startColor is black. but if the rank is not 0
+		// startColor is the final color of the previous range
+		if (rank > 0)
+		{
+			startColor = m_colorRange[rank - 1];
+		}
+		// ok, we have a multiplier, but is these one of the 20 highest?
+		// it it is, then use final special range
+		for (int x = m_iterations; x >= m_iterations - 19; --x)
+		{
+			if (m_histogram[x][2] == thisPoint)
+			{
+				if (x == m_iterations)
+				{
+					// special case max iteration count gets a gray color
+					red = green = blue = 210;
+				}
+				else
+				{
+					RGB fullRed = RGB(255, 0, 0);
+					//cout << "\tfound " << thisPoint << " iterations at " << x << "th position" << endl;
+					mult = (x - m_iterations + 20) / 20;
+					colorDiff = fullRed - startColor;
+					red = (uint8_t)(startColor.r + colorDiff.r * mult);
+					green = (uint8_t)(startColor.g + colorDiff.g * mult);
+					blue = (uint8_t)(startColor.b + colorDiff.b * mult);
+				}
+				return;
+			}
+		}
+		//
+		// not one of the highest
+		//
 		if (rank == 0)
 		{
 			//cout << "starting color for this rank is (" << c.r << "," << c.g << "," << c.b << ")" << endl;
@@ -265,6 +306,8 @@ namespace fractal
 		}
 		else
 		{
+			//	if this is one of the 20 highest ranks, then use one of 20 colors between
+			//	the final color of the last range and full red
 			//cout << "starting color for this rank is (" << c.r << "," << c.g << "," << c.b << ")" << endl;
 			colorDiff = m_colorRange[rank] - m_colorRange[rank - 1];
 			red =	(uint8_t) (m_colorRange[rank - 1].r + colorDiff.r * mult);
@@ -274,6 +317,10 @@ namespace fractal
 		//cout << "color for pixel is (" << (int)red << "," << (int)green << "," << (int)blue << ")" << endl;
 		return;
 	};
+
+
+
+
 
 	int FractalCreator::getFileNamePrefix
 	(
@@ -419,25 +466,26 @@ namespace fractal
 		int rank;
 		m_rangesInUse = 5;
 
-		m_colorRange[4].r = 210;
-		m_colorRange[4].g = 55;
-		m_colorRange[4].b = 55;	// gray
-
-		m_colorRange[3].r = 64;
-		m_colorRange[3].g = 64;
-		m_colorRange[3].b = 255;	
-
-		m_colorRange[2].r = 64;
-		m_colorRange[2].g = 255;
-		m_colorRange[2].b = 64;	
-
-		m_colorRange[1].r = 255;
-		m_colorRange[1].g = 64;
-		m_colorRange[1].b = 64;	
-
 		m_colorRange[0].r = 128;
 		m_colorRange[0].g = 128;
-		m_colorRange[0].b = 64;	// red
+		m_colorRange[0].b = 255;	// purple
+
+		m_colorRange[1].r = 64;
+		m_colorRange[1].g = 255;
+		m_colorRange[1].b = 255;
+
+
+		m_colorRange[2].r = 0;
+		m_colorRange[2].g = 190;
+		m_colorRange[2].b = 64;
+
+		m_colorRange[3].r = 64;
+		m_colorRange[3].g = 0;
+		m_colorRange[3].b = 160;
+
+		m_colorRange[4].r = 255;
+		m_colorRange[4].g = 200;
+		m_colorRange[4].b = 0;	
 
 		// now set the running totals for each range
 		// in int rangeTotal[]
